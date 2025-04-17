@@ -171,7 +171,7 @@ impl AggregateUDFImpl for Avg {
     fn groups_accumulator_supported(&self, args: AccumulatorArgs) -> bool {
         matches!(
             args.return_type,
-            DataType::Float64 | DataType::Decimal128(_, _)
+            DataType::Float64 | DataType::Decimal128(_, _) | DataType::Duration(_)
         )
     }
 
@@ -231,6 +231,49 @@ impl AggregateUDFImpl for Avg {
                     avg_fn,
                 )))
             }
+
+            (Duration(time_unit), Duration(_)) => match time_unit {
+                TimeUnit::Second => {
+                    let avg_fn = move |sum: i64, count: u64| Ok(sum / count as i64);
+                    Ok(Box::new(
+                        AvgGroupsAccumulator::<DurationSecondType, _>::new(
+                            &data_type,
+                            args.return_type,
+                            avg_fn,
+                        ),
+                    ))
+                }
+                TimeUnit::Millisecond => {
+                    let avg_fn = move |sum: i64, count: u64| Ok(sum / count as i64);
+                    Ok(Box::new(
+                        AvgGroupsAccumulator::<DurationMillisecondType, _>::new(
+                            &data_type,
+                            args.return_type,
+                            avg_fn,
+                        ),
+                    ))
+                }
+                TimeUnit::Microsecond => {
+                    let avg_fn = move |sum: i64, count: u64| Ok(sum / count as i64);
+                    Ok(Box::new(
+                        AvgGroupsAccumulator::<DurationMicrosecondType, _>::new(
+                            &data_type,
+                            args.return_type,
+                            avg_fn,
+                        ),
+                    ))
+                }
+                TimeUnit::Nanosecond => {
+                    let avg_fn = move |sum: i64, count: u64| Ok(sum / count as i64);
+                    Ok(Box::new(
+                        AvgGroupsAccumulator::<DurationNanosecondType, _>::new(
+                            &data_type,
+                            args.return_type,
+                            avg_fn,
+                        ),
+                    ))
+                }
+            },
 
             _ => not_impl_err!(
                 "AvgGroupsAccumulator for ({} --> {})",
